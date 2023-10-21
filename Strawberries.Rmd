@@ -1,0 +1,235 @@
+---
+title: "Strawberries :("
+author: "Amie Thomas"
+date: "2023-10-16"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("svglite")
+library(knitr)  
+library(kableExtra)
+library(tidyverse)
+library(stringr)
+```
+
+
+<Loading data>
+```{r}
+strawberry <- read.csv("strawberry(1).csv")
+
+#looking at data before
+glimpse(strawberry)
+
+```
+
+< Get rid of single value columns. Haviland's code >
+```{r}
+drop_single_val <- function(df){
+  col_val <- NULL
+  col_name <- NULL
+suppressWarnings({
+  for(i in 1:dim(df)[2]){
+if((df |> distinct(df[,i]) |> count()) == 1){
+  col_name = c(col_name, colnames(df[i]))
+  col_val = c(col_val, df[1,i])  
+} }
+})
+
+if(is.null(col_name)){return("No Columns to drop")}else{
+   col_val = unlist(col_val)
+   attributes(col_val) = NULL
+   drp = data.frame(col_name, col_val)
+   return(drp)
+   }
+}
+
+str <- drop_single_val(strawberry)
+
+str <- str$col_name
+
+strawberry <- strawberry |> select(!all_of(str))
+```
+
+```{r}
+#take a gander at the data after
+glimpse(strawberry)
+```
+
+```{r}
+#check if every row has is associated with a state
+###question to self: why do we need to do this
+state_all <- strawberry |> group_by(State) |> count()
+
+### test if every row is associated with a state by summing the 
+## counts and testing for equality with the total rows in the 
+## data frame
+
+if(sum(state_all$n) == dim(strawberry)[1]){print("Every row has value in the State column.")}
+```
+
+So far, Haviland has removed missing values from the columns. And I think checked for missing values in the rows. Why did Haviland find the state with the most rows. Ask about the difference in his notations. Is this a common way of notation
+
+```{r}
+#which state has the most rows? 
+#how does this information help us?
+state_max <- state_all$State[which(state_all$n ==  max(state_all$n)  )]
+
+
+```
+
+#Havilands notes
+<!-- ## Separate CENSUS and SURVEY into two Data Frames -->
+
+<!-- In the strawberry data frame,  -->
+<!-- The CENSUS rows contains marketing, sales, and productiong data.  The SURVEY rows contain rows which may be redundant with the CENSUS rows and chemical application rows. -->
+
+<!-- After splitting CENSUS and SURVEY rows into two data frames,  -->
+<!-- finish organizing the CENSUS data first.  Then, organize the -->
+<!-- SURVEY data frame splitting the marketing, and production data from the chemical application data. -->
+
+
+```{r}
+strwb_survey <- strawberry |> filter(Program == "SURVEY")
+strwb_census <- strawberry |> filter(Program == "CENSUS")
+```
+
+Need to separate the columns that have more than one type of information. Domain item and Domain category
+<!-- Column separators in CENSUS: ",", "-", ":" -->
+
+<!-- ### Separate `Data Item` into columns by "," -->
+
+#separate_wider_delim i think separates strings in to columns by delimiters 
+
+```{r}
+strwb_census <- strwb_census |>
+  separate_wider_delim(  cols = `Data Item`,
+                         delim = ",",
+                         names = c("Fruit",
+                                 "temp1",
+                                 "temp2",
+                                 "temp3"),
+                         too_many = "error",
+                         too_few = "align_start"
+                       )
+#what does the too many and too few do in this
+
+strwb_census <- strwb_census |>
+  separate_wider_delim(  cols = temp1,
+                         delim = " - ",
+                         names = c("crop_type",
+                                 "prop_acct"),
+                         too_many = "error",
+                         too_few = "align_start"
+                       )
+
+## trim the strings
+## you can see which columns contain string values that need
+## to have leading or trailing spaces that need to be trimmed.
+
+
+# glimpse(strwb_census)
+
+strwb_census$crop_type <- str_trim(strwb_census$crop_type, side = "both")
+
+strwb_census$temp2 <- str_trim(strwb_census$temp2, side = "both")
+
+strwb_census$temp3 <- str_trim(strwb_census$temp3, side = "both")
+```
+
+< Fresh market column >
+
+```{r}
+#| label: create a fresh market column
+#| echo: false
+#| eval: true
+
+## make a copy of the temp2 column named `Fresh Market`.
+strwb_census <- strwb_census |> mutate(`Fresh Market` = temp2, .after = temp2)
+
+## Remove cells in `Fresh Market` column 
+##   that begin "MEASURED"
+strwb_census$`Fresh Market` <- strwb_census$`Fresh Market` |> str_replace( "^MEA.*", "")
+
+## Remove cells in `Fresh Market` column 
+##   that begin "PROCESSING" 
+strwb_census$`Fresh Market` <- strwb_census$`Fresh Market` |> str_replace( "^P.*", "")
+
+## substitute a space for NA in `Fresh Market` column
+strwb_census$`Fresh Market`[is.na(strwb_census$`Fresh Market`)] <- ""  
+
+## in temp2 column, remove cells that begin "FRESH"
+ strwb_census$temp2 <- strwb_census$temp2 |> str_replace("^F.*", "")
+
+## Now fix the entries in the `Fresh Market` column
+##   Remove "FRESH MARKET - " from the cells
+strwb_census$`Fresh Market` <- strwb_census$`Fresh Market` |> str_replace("^FRESH MARKET - ", "")
+
+```
+
+<!-- ## Create a "Process Market" column -->
+
+```{r}
+#| label: make process market column
+#| echo: false
+
+## Make a copy of temp2 named `Process Market`
+strwb_census <- strwb_census |> mutate(`Process Market` = temp2, .after = temp2)
+
+## remove `Process Market` cells beginning "MEASURED"
+strwb_census$`Process Market` <-  strwb_census$`Process Market` |> str_replace("^MEA.*", "")
+
+## substitute space for NA in `Process Market` column
+strwb_census$`Process Market`[is.na(strwb_census$`Process Market`)] <- ""
+
+## In temp2, remove cells that begin "PROCESSING"
+strwb_census$temp2 <- strwb_census$temp2 |> str_replace("^P.*", "")
+
+## In `Processing Market`, remove "PROCESSING - " from cells
+strwb_census$`Process Market` <-  strwb_census$`Process Market` |> str_replace("PROCESSING - ", "") 
+```
+
+<!-- Remove NA's from prop_acct, temp2, and temp3 -->
+
+```{r}
+## substitute a space for NA in prop_acct column
+strwb_census$prop_acct[is.na(strwb_census$prop_acct)] <- "" 
+
+## substitute a space for NA in temp2 column
+strwb_census$temp2[is.na(strwb_census$temp2)] <- "" 
+
+## substitute a space for NA in temp2 column
+strwb_census$temp3[is.na(strwb_census$temp3)] <- "" 
+
+```
+
+<!-- Combine temp2 with temp3 to create Metric column -->
+<!-- remove  -->
+<!-- relocate columns -->
+
+```{r}
+strwb_census <- strwb_census |> unite(temp2, temp3, col="Metric", sep="")
+
+## Now fix the entries in the Metric column
+##   Remove "MEASURED IN " from the cells
+strwb_census$Metric <- strwb_census$Metric |> str_replace("MEASURED IN ", "")
+
+## move Metric to the end
+strwb_census <- strwb_census |> relocate(Metric, .before = Domain)
+
+strwb_census <- strwb_census |> relocate(`Process Market`, .before = Metric)
+
+strwb_census <- strwb_census |> rename(Totals = prop_acct)
+
+#drop_one_value_col(strwb_census)
+
+```
+
+
+```{r}
+
+```
+
+
+
