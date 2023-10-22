@@ -7,7 +7,6 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-install.packages("svglite")
 library(knitr)  
 library(kableExtra)
 library(tidyverse)
@@ -104,7 +103,7 @@ Need to separate the columns that have more than one type of information. Domain
 
 ```{r}
 strwb_census <- strwb_census |>
-  separate_wider_delim(  cols = `Data Item`,
+  separate_wider_delim(  cols = `Data.Item`,
                          delim = ",",
                          names = c("Fruit",
                                  "temp1",
@@ -228,8 +227,444 @@ strwb_census <- strwb_census |> rename(Totals = prop_acct)
 
 
 ```{r}
+## remove commas from numbers
+## fix footnotes
+
+## basic tools
+
+## start by getting the Values column so you can work on it 
+
+vals <- strwb_census$Value
+
+## note where vals goes in the environment.
+
+## tools -- 2 choices  base R, and stringr package
+
+## BaseR -- Piping??
+
+
+g1 <- sub(",", "", vals)
+# vals[1:20]
+# g1[1:20]
+
+
+g2 <- gsub(",", "", vals)
+# vals[1:20]
+# g2[1:20]
+
+
+## stringr - str_replace(), str_replace_all()
+
+## LOOK -- see ref for stingr pkg
+a <- vals |> str_detect(",")
+
+# vals[1:20]
+# a[1:20]
+
+## Still strings!!
+
+b <- vals |> str_replace(",", "")
+# vals[1:20]
+# b[1:20]
+
+c <- vals |> str_replace_all(",", "")
+# vals[1:20]
+# c[1:20]
+
+## Now notice what happens when the
+## the strings of digits are cast to numerics.
+
+## for example
+c <- as.numeric(c)
+# c[1:20]
+
+
+### remove commas from Value entries
+dcomma <- function(c){
+  x_new <- as.numeric(gsub(",", "", c))
+  return(x_new)
+}
+
+
+
+#########################################  footnotes
+
+## finds single uppor case Character in parens in s2
+## e.g. "(D)"
+
+## To fine the location and value of the footnotes
+
+v <- strwb_census$Value
+
+
+## find the footnote locations
+## fn_i: locations 
+fn_i <- v |> str_detect("^\\([:upper:]\\)$") ## returns
+
+
+## dcomma returns numbers and NA's
+v1 <- dcomma(v)
+
+## locations of NA's
+na_i <- is.na(v1)
+
+## Demonstration that the locations of the footnotes
+## are the same as the locations of the NA's
+
+# length(v) == sum(na_i == fn_i)
+
+## update dcomma()
+## Integrate transformation of the values column and 
+## reporting the footnote values.
+
+
+dcomma <- function(c){
+  suppressWarnings({
+  xnew = as.numeric(gsub(",", "", c))
+  fns = unique(c[is.na(xnew)])
+  vtran = list("new_vec" = xnew, "footnotes" = fns)
+  return(vtran)
+  })
+}
+
+ 
+v_trns <- dcomma(v)
+ 
+
+ a <- v_trns$new_vec
+ # a[1:20]
+ 
+ # v_trns$footnotes
+ 
 
 ```
+
+```{r}
+per_c <- strwb_survey |> select(Period) |> distinct()
+per_c <- unlist(per_c)
+
+
+## the Period column denotes
+## three periods for data collection
+##    marketing year
+##    year
+##    year - Aug Forecast
+
+```
+
+```{r}
+## remove commas from numbers
+## fix footnotes
+
+## basic tools
+
+## start by getting the Values column so you can work on it 
+
+vals <- strwb_survey$Value
+
+## note where vals goes in the environment.
+
+## tools -- 2 choices  base R, and stringr package
+
+## BaseR -- Piping??
+
+
+g1 <- sub(",", "", vals)
+# vals[1:20]
+# g1[1:20]
+
+
+g2 <- gsub(",", "", vals)
+# vals[1:20]
+# g2[1:20]
+
+
+## stringr - str_replace(), str_replace_all()
+
+## LOOK -- see ref for stingr pkg
+a <- vals |> str_detect(",")
+
+# vals[1:20]
+# a[1:20]
+
+## Still strings!!
+
+b <- vals |> str_replace(",", "")
+# vals[1:20]
+# b[1:20]
+
+c <- vals |> str_replace_all(",", "")
+# vals[1:20]
+# c[1:20]
+
+## Now notice what happens when the
+## the strings of digits are cast to numerics.
+
+## for example
+c <- as.numeric(c)
+# c[1:20]
+
+
+### remove commas from Value entries
+dcomma <- function(c){
+  x_new <- as.numeric(gsub(",", "", c))
+  return(x_new)
+}
+
+
+
+#########################################  footnotes
+
+## finds single uppor case Character in parens in s2
+## e.g. "(D)"
+
+## To fine the location and value of the footnotes
+
+v <- strwb_survey$Value
+
+
+## find the footnote locations
+## fn_i: locations 
+fn_i <- v |> str_detect("^\\([:upper:]\\)$") ## returns
+
+
+## dcomma returns numbers and NA's
+v1 <- dcomma(v)
+
+## locations of NA's
+na_i <- is.na(v1)
+
+## Demonstration that the locations of the footnotes
+## are the same as the locations of the NA's
+
+# length(v) == sum(na_i == fn_i)
+
+## update dcomma()
+## Integrate transformation of the values column and 
+## reporting the footnote values.
+
+
+dcomma <- function(c){
+  suppressWarnings({
+  xnew = as.numeric(gsub(",", "", c))
+  fns = unique(c[is.na(xnew)])
+  vtran = list("new_vec" = xnew, "footnotes" = fns)
+  return(vtran)
+  })
+}
+
+ 
+v_trns <- dcomma(v)
+ 
+
+ a <- v_trns$new_vec
+ # a[1:20]
+ 
+ # v_trns$footnotes
+ 
+```
+
+```{r}
+strwb_survey <- strwb_survey |> 
+  separate_wider_delim(  cols = `Data.Item`,
+                         delim = ",",
+                         names = c("temp1",
+                                 "temp2",
+                                 "temp3",
+                                 "temp4"),
+                         too_many = "error",
+                         too_few = "align_start"
+                       )
+
+strwb_survey <- strwb_survey |>
+  separate_wider_delim(  cols = temp1,
+                         delim = " - ",
+                         names = c("temp1a",
+                                 "temp1b"),
+                         too_many = "error",
+                         too_few = "align_start"
+                       )
+```
+
+
+```{r}
+
+strwb_survey <- strwb_survey |>
+  separate_wider_delim(  cols = Domain,
+                         delim = ",",
+                         names = c("temp22",
+                                 "temp23"),
+                         too_many = "error",
+                         too_few = "align_start"
+                       )
+
+
+t22 <- unique(strwb_survey$temp22)
+
+t23 <- unique(strwb_survey$temp23)
+
+```
+
+
+```{r}
+strwb_survey <- strwb_survey |>
+  separate_wider_delim(  cols = `Domain.Category`,
+                         delim = ",",
+                         names = c("temp42",
+                                 "temp43",
+                                 "temp44",
+                                 "temp45"),
+                         too_many = "error",
+                         too_few = "align_start"
+                       )
+
+
+## temp22 or temp42 or both == CHEMICAL 
+##  else the row contains market data
+
+
+
+strwb_survey_chem <- strwb_survey |> filter((temp22 == "CHEMICAL") | (temp42 == "CHEMICAL"))
+
+strwb_survey_mkt <- strwb_survey |> filter(!((temp22 == "CHEMICAL") | (temp42 == "CHEMICAL")))
+
+```
+
+```{r}
+chem1 <-  drop_single_val(strwb_survey_chem)
+
+# chem1 |> kable(caption = "1-value columns dropped")
+
+chem1 <- setdiff(colnames(strwb_survey_chem), chem1$col_name)
+
+strwb_survey_chem <- strwb_survey_chem |> select(all_of(chem1))
+```
+
+```{r}
+mkt1 <- drop_single_val(strwb_survey_mkt)
+
+# mkt1 |> kable(caption = "droping 1-value cols - mkt")
+
+mkt1 <- setdiff(colnames(strwb_survey_mkt), mkt1$col_name)
+
+strwb_survey_mkt <- strwb_survey_mkt |> select(all_of(mkt1))
+
+```
+
+```{r}
+strwb_survey_mkt$temp1b <- str_trim(strwb_survey_mkt$temp1b, side = "both")
+
+strwb_survey_mkt$temp2 <- str_trim(strwb_survey_mkt$temp2, side = "both")
+
+strwb_survey_mkt$temp3 <- str_trim(strwb_survey_mkt$temp3, side = "both")
+
+strwb_survey_mkt$temp4 <- str_trim(strwb_survey_mkt$temp4, side = "both")
+```
+
+
+
+```{r}
+strwb_survey_mkt <- strwb_survey_mkt |> mutate(`Fresh Market` = temp2, .after = temp2)
+
+strwb_survey_mkt$`Fresh Market` <- strwb_survey_mkt$`Fresh Market` |> str_replace( "^MEA.*", "")
+
+strwb_survey_mkt$`Fresh Market` <- strwb_survey_mkt$`Fresh Market` |> str_replace( "^P.*", "")
+
+strwb_survey_mkt$`Fresh Market`[is.na(strwb_survey_mkt$`Fresh Market`)] <- ""
+
+strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace("^F.*", "")
+
+strwb_survey_mkt$`Fresh Market` <- strwb_survey_mkt$`Fresh Market` |> str_replace("^FRESH MARKET - ", "")
+```
+
+
+```{r}
+strwb_survey_mkt <- strwb_survey_mkt |> mutate(`Process Market` = temp2, .after = temp2)
+
+strwb_survey_mkt$`Process Market` <-  strwb_survey_mkt$`Process Market` |> str_replace("^MEA.*", "")
+
+strwb_survey_mkt$`Process Market` <-  strwb_survey_mkt$`Process Market` |> str_replace("^MEA.*", "")
+
+```
+
+```{r}
+## substitute a space for NA in prop_acct column
+strwb_survey_mkt$temp1b[is.na(strwb_survey_mkt$temp1b)] <- "" 
+
+## substitute a space for NA in temp2 column
+strwb_survey_mkt$temp2[is.na(strwb_survey_mkt$temp2)] <- "" 
+
+## substitute a space for NA in temp2 column
+strwb_survey_mkt$temp3[is.na(strwb_survey_mkt$temp3)] <- "" 
+
+strwb_survey_mkt$temp4[is.na(strwb_survey_mkt$temp4)] <- "" 
+
+```
+
+
+#fix temp2
+```{r}
+strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^P.*", "")
+
+strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^U.*", "")
+
+strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^N.*", "")
+
+strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^B.*", "")
+
+```
+
+```{r}
+strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^P.*", "")
+
+strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^U.*", "")
+
+strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^N.*", "")
+
+strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^B.*", "")
+```
+
+```{r}
+strwb_survey_mkt <- strwb_survey_mkt |> unite(temp2, temp3, temp4, col="Metric", sep="")
+
+strwb_survey_mkt$Metric <- strwb_survey_mkt$Metric |> str_replace("MEASURED IN ", "")
+```
+
+```{r}
+colnames(strwb_survey_mkt)[colnames(strwb_survey_mkt) == "temp1b"] ="prop_acct"
+```
+
+```{r}
+strwb_survey_chem$temp4[is.na(strwb_survey_chem$temp4)] <- ""
+
+strwb_survey_chem$temp44[is.na(strwb_survey_chem$temp44)] <- ""
+
+strwb_survey_chem$temp45[is.na(strwb_survey_chem$temp45)] <- ""
+```
+
+
+```{r}
+strwb_survey_chem <- separate(strwb_survey_chem, temp43, into = c("temp23", "tempchem"), sep = ":")
+```
+
+```{r}
+strwb_survey_chem <- subset(strwb_survey_chem, Value!= " (Z)")
+
+strwb_survey_chem <- subset(strwb_survey_chem, Value!= " (D)")
+
+strwb_survey_chem <- subset(strwb_survey_chem, Value!= " (NA)")
+```
+
+
+```{r}
+strwb_survey_chem <- separate(strwb_survey_chem, tempchem, into = c("chem_name", "chem_num"), sep = "=")
+```
+
+
+
+
+
+
 
 
 
