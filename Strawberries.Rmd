@@ -541,51 +541,33 @@ chem1 <- setdiff(colnames(strwb_survey_chem), chem1$col_name)
 strwb_survey_chem <- strwb_survey_chem |> select(all_of(chem1))
 ```
 
+
+##Come back to this part right here
 ```{r}
 mkt1 <- drop_single_val(strwb_survey_mkt)
 
+strwb_survey_mkt <- strwb_survey_mkt |>
+  separate_wider_delim(  cols = `temp1a`,
+                         delim = ",",
+                         names = c("crop","type"),
+                         too_many = "merge",
+                         too_few = "align_start"
+                       )
+strwb_survey_mkt <- strwb_survey_mkt |>
+  separate_wider_delim(  cols = `type`,
+                         delim = ",",
+                         names = c("typ","temp1"),
+                         too_many = "merge",
+                         too_few = "align_start"
+                       )
+
 # mkt1 |> kable(caption = "droping 1-value cols - mkt")
 
-mkt1 <- setdiff(colnames(strwb_survey_mkt), mkt1$col_name)
-
-strwb_survey_mkt <- strwb_survey_mkt |> select(all_of(mkt1))
-
 ```
 
 ```{r}
-strwb_survey_mkt$temp1b <- str_trim(strwb_survey_mkt$temp1b, side = "both")
-
-strwb_survey_mkt$temp2 <- str_trim(strwb_survey_mkt$temp2, side = "both")
-
-strwb_survey_mkt$temp3 <- str_trim(strwb_survey_mkt$temp3, side = "both")
-
-strwb_survey_mkt$temp4 <- str_trim(strwb_survey_mkt$temp4, side = "both")
-```
-
-
-
-```{r}
-strwb_survey_mkt <- strwb_survey_mkt |> mutate(`Fresh Market` = temp2, .after = temp2)
-
-strwb_survey_mkt$`Fresh Market` <- strwb_survey_mkt$`Fresh Market` |> str_replace( "^MEA.*", "")
-
-strwb_survey_mkt$`Fresh Market` <- strwb_survey_mkt$`Fresh Market` |> str_replace( "^P.*", "")
-
-strwb_survey_mkt$`Fresh Market`[is.na(strwb_survey_mkt$`Fresh Market`)] <- ""
-
-strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace("^F.*", "")
-
-strwb_survey_mkt$`Fresh Market` <- strwb_survey_mkt$`Fresh Market` |> str_replace("^FRESH MARKET - ", "")
-```
-
-
-```{r}
-strwb_survey_mkt <- strwb_survey_mkt |> mutate(`Process Market` = temp2, .after = temp2)
-
-strwb_survey_mkt$`Process Market` <-  strwb_survey_mkt$`Process Market` |> str_replace("^MEA.*", "")
-
-strwb_survey_mkt$`Process Market` <-  strwb_survey_mkt$`Process Market` |> str_replace("^MEA.*", "")
-
+strwb_survey_mkt <- strwb_survey_mkt %>% 
+  select(-temp23, -temp43, -temp44, -temp45, -cv)
 ```
 
 ```{r}
@@ -603,32 +585,12 @@ strwb_survey_mkt$temp4[is.na(strwb_survey_mkt$temp4)] <- ""
 ```
 
 
-#fix temp2
 ```{r}
-strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^P.*", "")
 
-strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^U.*", "")
 
-strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^N.*", "")
+strwb_survey_mkt <- subset(strwb_survey_mkt, Value!= " (D)")
 
-strwb_survey_mkt$temp2 <- strwb_survey_mkt$temp2 |> str_replace( "^B.*", "")
 
-```
-
-```{r}
-strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^P.*", "")
-
-strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^U.*", "")
-
-strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^N.*", "")
-
-strwb_survey_mkt$temp3 <- strwb_survey_mkt$temp3 |> str_replace( "^B.*", "")
-```
-
-```{r}
-strwb_survey_mkt <- strwb_survey_mkt |> unite(temp2, temp3, temp4, col="Metric", sep="")
-
-strwb_survey_mkt$Metric <- strwb_survey_mkt$Metric |> str_replace("MEASURED IN ", "")
 ```
 
 ```{r}
@@ -655,8 +617,6 @@ strwb_survey_chem <- subset(strwb_survey_chem, Value!= " (D)")
 
 strwb_survey_chem <- subset(strwb_survey_chem, Value!= " (NA)")
 
-strwb_survey_mkt <- subset(strwb_survey_chem, Value!= " (D)")
-
 ```
 
 
@@ -671,7 +631,7 @@ colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "temp23"] <- "Pest"
 
 colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "chem_name"] <- "Chem"
 
-colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "chem_total"] <- "Total"
+colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "chem_total"] <- "Chem_Num"
 
 colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "temp3"] <- "Metric"
 
@@ -686,13 +646,39 @@ strwb_survey_chem$Metric <- strwb_survey_chem$Metric |> str_replace("MEASURED IN
 ```
 
 ```{r}
+library(readr)
+chemical <- read_csv("chemical.csv")
 
 harm_level <- chemical$harm_level
 
 strwb_survey_chem$harm_level <- harm_level
 
+value_mapping <- c("Ia" = "Extremely hazardous", "Ib" = "Highly hazardous", 
+                   "II" = "Moderately hazardous", "III" = "Slightly hazardous", 
+                   "U" = "Unlikely to present acute hazard in normal use", 
+                   "FM" = "Fumigant", "O" = "Obsolete as pesticide")
+
+strwb_survey_chem$lvl_descript <- value_mapping[strwb_survey_chem$harm_level]
 
 ```
+ 
+Questions for EDA 
+Where are most strawberries grown and what markets do they go to?
+-need to know the states
+-what market they go to 
+
+```{r}
+
+```
+What pesticides are used and how does it vary by state?
+```{r}
+
+```
+What state uses the most harmful pesticides?
+-what does each harm level mean 
+-need to by state 
+-eventually group by harm level 
+
 
 ```{r}
 
@@ -734,7 +720,7 @@ title ="Organic Strawberry Sales ($) in 2021")
 
 ```{r}
 
-plot2_data <- strawberry %>%
+plot3_data <- strawberry %>%
   select(Year, State, Category, Item, Value) %>%
   filter(Year == 2021, 
          Category == "ORGANIC - SALES", 
@@ -743,7 +729,7 @@ plot2_data <- strawberry %>%
   mutate(Value = as.numeric(gsub(",", "", Value))) %>%
   arrange(desc(Value))
 
-ggplot(plot2_data, aes(x = reorder(State, -Value), y = Value)) + 
+ggplot(plot3_data, aes(x = reorder(State, -Value), y = Value)) + 
   geom_bar(stat = "identity") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "States", y = "Sales",
@@ -751,10 +737,7 @@ ggplot(plot2_data, aes(x = reorder(State, -Value), y = Value)) +
 
 ```
 
-```{r}
 
-
-```
 
 
 
