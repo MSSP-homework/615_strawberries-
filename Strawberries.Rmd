@@ -1,9 +1,23 @@
 ---
-title: "Strawberries :("
+title: "Strawberries EDA"
 author: "Amie Thomas"
 date: "2023-10-16"
 output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
+
+Introduction
+
+How do you choose your food? Do you go for the cheapest option? The food
+that is the quickest to prepare? Have you ever thought about the process
+your food goes through before it gets to your table? According to the
+World Health Organization, you should. The following includes an
+analysis of states that produced the most organic strawberries in the
+year 2021. Additionally, there is an analysis of the amount of
+pesticides used on the strawberries produced in California, the largest
+Strawberry producer in the United States. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -14,8 +28,8 @@ library(stringr)
 library(ggplot2)
 ```
 
-
 <Loading data>
+
 ```{r}
 strawberry <- read.csv("strawberry(1).csv")
 
@@ -24,7 +38,8 @@ glimpse(strawberry)
 
 ```
 
-< Get rid of single value columns. Haviland's code >
+\< Get rid of single value columns. Haviland's code \>
+
 ```{r}
 drop_single_val <- function(df){
   col_val <- NULL
@@ -69,7 +84,10 @@ state_all <- strawberry |> group_by(State) |> count()
 if(sum(state_all$n) == dim(strawberry)[1]){print("Every row has value in the State column.")}
 ```
 
-So far, Haviland has removed missing values from the columns. And I think checked for missing values in the rows. Why did Haviland find the state with the most rows. Ask about the difference in his notations. Is this a common way of notation
+So far, Haviland has removed missing values from the columns. And I
+think checked for missing values in the rows. Why did Haviland find the
+state with the most rows. Ask about the difference in his notations. Is
+this a common way of notation
 
 ```{r}
 #which state has the most rows? 
@@ -79,28 +97,28 @@ state_max <- state_all$State[which(state_all$n ==  max(state_all$n)  )]
 
 ```
 
-#Havilands notes
 <!-- ## Separate CENSUS and SURVEY into two Data Frames -->
 
 <!-- In the strawberry data frame,  -->
+
 <!-- The CENSUS rows contains marketing, sales, and productiong data.  The SURVEY rows contain rows which may be redundant with the CENSUS rows and chemical application rows. -->
 
 <!-- After splitting CENSUS and SURVEY rows into two data frames,  -->
-<!-- finish organizing the CENSUS data first.  Then, organize the -->
-<!-- SURVEY data frame splitting the marketing, and production data from the chemical application data. -->
 
+<!-- finish organizing the CENSUS data first.  Then, organize the -->
+
+<!-- SURVEY data frame splitting the marketing, and production data from the chemical application data. -->
 
 ```{r}
 strwb_survey <- strawberry |> filter(Program == "SURVEY")
 strwb_census <- strawberry |> filter(Program == "CENSUS")
 ```
 
-Need to separate the columns that have more than one type of information. Domain item and Domain category
+Need to separate the columns that have more than one type of
+information. Domain item and Domain category
 <!-- Column separators in CENSUS: ",", "-", ":" -->
 
 <!-- ### Separate `Data Item` into columns by "," -->
-
-#separate_wider_delim i think separates strings in to columns by delimiters 
 
 ```{r}
 strwb_census <- strwb_census |>
@@ -138,7 +156,7 @@ strwb_census$temp2 <- str_trim(strwb_census$temp2, side = "both")
 strwb_census$temp3 <- str_trim(strwb_census$temp3, side = "both")
 ```
 
-< Fresh market column >
+\< Fresh market column \>
 
 ```{r}
 #| label: create a fresh market column
@@ -205,7 +223,9 @@ strwb_census$temp3[is.na(strwb_census$temp3)] <- ""
 ```
 
 <!-- Combine temp2 with temp3 to create Metric column -->
+
 <!-- remove  -->
+
 <!-- relocate columns -->
 
 ```{r}
@@ -225,7 +245,6 @@ strwb_census <- strwb_census |> rename(Totals = prop_acct)
 #drop_one_value_col(strwb_census)
 
 ```
-
 
 ```{r}
 ## remove commas from numbers
@@ -487,7 +506,6 @@ strwb_survey <- strwb_survey |>
                        )
 ```
 
-
 ```{r}
 
 strwb_survey <- strwb_survey |>
@@ -505,7 +523,6 @@ t22 <- unique(strwb_survey$temp22)
 t23 <- unique(strwb_survey$temp23)
 
 ```
-
 
 ```{r}
 strwb_survey <- strwb_survey |>
@@ -531,6 +548,8 @@ strwb_survey_mkt <- strwb_survey |> filter(!((temp22 == "CHEMICAL") | (temp42 ==
 
 ```
 
+### End of Haviland code
+
 ```{r}
 chem1 <-  drop_single_val(strwb_survey_chem)
 
@@ -541,8 +560,6 @@ chem1 <- setdiff(colnames(strwb_survey_chem), chem1$col_name)
 strwb_survey_chem <- strwb_survey_chem |> select(all_of(chem1))
 ```
 
-
-##Come back to this part right here
 ```{r}
 mkt1 <- drop_single_val(strwb_survey_mkt)
 
@@ -567,7 +584,7 @@ strwb_survey_mkt <- strwb_survey_mkt |>
 
 ```{r}
 strwb_survey_mkt <- strwb_survey_mkt %>% 
-  select(-temp23, -temp43, -temp44, -temp45, -cv)
+  select(-typ, -temp1, -temp23, -temp43, -temp44, -temp45)
 ```
 
 ```{r}
@@ -582,15 +599,32 @@ strwb_survey_mkt$temp3[is.na(strwb_survey_mkt$temp3)] <- ""
 
 strwb_survey_mkt$temp4[is.na(strwb_survey_mkt$temp4)] <- "" 
 
+strwb_survey_mkt$State.ANSI[is.na(strwb_survey_mkt$State.ANSI)] <- "" 
+
+colnames(strwb_survey_mkt)[colnames(strwb_survey_mkt) == "temp1b"] <- "Pest"
+
+colnames(strwb_survey_mkt)[colnames(strwb_survey_mkt) == "temp2"] <- "Metric_1"
+
+colnames(strwb_survey_mkt)[colnames(strwb_survey_mkt) == "temp3"] <- "Metric_2"
+
+colnames(strwb_survey_mkt)[colnames(strwb_survey_mkt) == "temp4"] <- "AVG"
+
+strwb_survey_mkt$Metric_1 <- str_trim(strwb_survey_mkt$Metric_1, side = "both")
+
+strwb_survey_mkt$Metric_2 <- str_trim(strwb_survey_mkt$Metric_2, side = "both")
+
+strwb_survey_mkt$Value <- str_trim(strwb_survey_mkt$Value, side = "both")
+
+strwb_survey_mkt$State <- str_trim(strwb_survey_mkt$State, side = "both")
+
+strwb_census$Value <- str_trim(strwb_census$Value, side = "both")
+
+strwb_census$Year <- str_trim(strwb_census$Year, side = "both")
+
 ```
 
-
 ```{r}
-
-
 strwb_survey_mkt <- subset(strwb_survey_mkt, Value!= " (D)")
-
-
 ```
 
 ```{r}
@@ -605,7 +639,6 @@ strwb_survey_chem$temp44[is.na(strwb_survey_chem$temp44)] <- ""
 strwb_survey_chem$temp45[is.na(strwb_survey_chem$temp45)] <- ""
 ```
 
-
 ```{r}
 strwb_survey_chem <- separate(strwb_survey_chem, temp43, into = c("temp23", "tempchem"), sep = ":")
 ```
@@ -619,7 +652,6 @@ strwb_survey_chem <- subset(strwb_survey_chem, Value!= " (NA)")
 
 ```
 
-
 ```{r}
 strwb_survey_chem$tempchem <- str_trim(strwb_survey_chem$tempchem, side = "both")
 strwb_survey_chem <- separate(strwb_survey_chem, tempchem, into = c("chem_name", "chem_total"), sep = "=")
@@ -627,21 +659,12 @@ strwb_survey_chem <- separate(strwb_survey_chem, tempchem, into = c("chem_name",
 strwb_survey_chem$chem_name <- substr(strwb_survey_chem$chem_name, 2, nchar(strwb_survey_chem$chem_name))
 strwb_survey_chem$chem_total <- substr(strwb_survey_chem$chem_total, 1, nchar(strwb_survey_chem$chem_total) - 1)
 
-colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "temp23"] <- "Pest"
-
-colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "chem_name"] <- "Chem"
-
-colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "chem_total"] <- "Chem_Num"
-
-colnames(strwb_survey_chem)[colnames(strwb_survey_chem) == "temp3"] <- "Metric"
-
 strwb_survey_chem <- strwb_survey_chem %>% 
   select(-temp44)
 
 strwb_survey_chem <- strwb_survey_chem %>% 
   select(-temp45)
 
-strwb_survey_chem$Metric <- strwb_survey_chem$Metric |> str_replace("MEASURED IN ", "")
 
 ```
 
@@ -661,83 +684,64 @@ value_mapping <- c("Ia" = "Extremely hazardous", "Ib" = "Highly hazardous",
 strwb_survey_chem$lvl_descript <- value_mapping[strwb_survey_chem$harm_level]
 
 ```
- 
-Questions for EDA 
-Where are most strawberries grown and what markets do they go to?
--need to know the states
--what market they go to 
+
+Questions for EDA Market data what state produces the most for the fresh
+market
 
 ```{r}
-
+# Market <- strwb_survey_mkt %>% 
+#   filter(Metric_1 == "PROCESSING") |>
+#   group_by(State) 
+  
 ```
-What pesticides are used and how does it vary by state?
-```{r}
 
-```
-What state uses the most harmful pesticides?
--what does each harm level mean 
--need to by state 
--eventually group by harm level 
-
+Chemical data What pesticides are used and how does it vary by state?
+What state uses the most harmful pesticides? -what does each harm level
+mean -need to by state -eventually group by harm level
 
 ```{r}
 
-plot1_data <- strawberry %>%
-  select(Year, State, Domain_Category, Value) %>%
-  filter(Year == 2021, Domain_Category == "ORGANIC - OPERATIONS WITH SALES") %>%
-  mutate(Value = as.numeric(Value)) %>%
+# Replace commas with periods and convert to numeric
+strwb_census$Value <- as.numeric(gsub(",", "\\.", strwb_census$Value))
+
+#top 10 states with highest production of strawberries 
+ production_2021 <- strwb_census |> 
+  filter(Year == 2021) |>
+  filter(Totals == "PRODUCTION") |>
   arrange(desc(Value))
-
-ggplot(plot1_data, aes(x = reorder(State, -Value), y = Value)) + 
-  geom_bar(stat = "identity") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "States", y = "Count",
-       title = "Number of Organic Strawberry Operations with Sales in 2021")
-
+  
+  
+ggplot(production_2021, aes(x = State, y = Value, fill = State))+
+  geom_bar(stat = "identity")+
+  labs(x = "State", y = "Strawberries produced in thousands", subtitle = "in 2021") +
+  ggtitle("Strawberry production by state")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ```{r}
-plot2_data <- strawberry |> 
-  select(c(Year, State, Category, Item, Value)) |> 
-  filter((Year == 2021) & 
-           (Category == "ORGANIC - SALES") & 
-           (Item == "MEASURED IN $") & 
-           (Value != "(D)"))
 
+strwb_survey_chem$Value <- as.numeric(gsub(",", "\\.", strwb_survey_chem$Value))
+California <- strwb_survey_chem |>
+  filter(temp3 == " MEASURED IN LB / ACRE / APPLICATION")|>
+  filter(temp23 != " OTHER")|>
+  filter(State == "CALIFORNIA")
 
-plot2_data$Value <- as.numeric(gsub(",", "", plot2_data$Value))
-
-plot2_data <- plot1_data |> arrange(desc(Value))
-
-ggplot(plot2_data, aes(x=reorder(State, -Value), y=Value)) + 
-  geom_bar(stat = "identity") + 
-  theme(axis.text.x=element_text(angle=45,hjust=1)) +
-  labs(x = "States", y = "Sales",
-title ="Organic Strawberry Sales ($) in 2021")
-
+ggplot(California, aes(x = harm_level, y = Value, fill = temp23))+
+  geom_bar(stat = "identity", position = "dodge")+
+  labs(x = "Harm Level", y = "Amount", subtitle = "In California") +
+  ggtitle("Amount of Pestcides on Strawberries")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-
-```{r}
-
-plot3_data <- strawberry %>%
-  select(Year, State, Category, Item, Value) %>%
-  filter(Year == 2021, 
-         Category == "ORGANIC - SALES", 
-         Item == "MEASURED IN $",
-         Value != "(D)") %>%
-  mutate(Value = as.numeric(gsub(",", "", Value))) %>%
-  arrange(desc(Value))
-
-ggplot(plot3_data, aes(x = reorder(State, -Value), y = Value)) + 
-  geom_bar(stat = "identity") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "States", y = "Sales",
-       title = "Organic Strawberry Sales ($) in 2021")
-
+```         
 ```
 
+#Conclusion
 
+Ia" = "Extremely hazardous", "Ib" = "Highly hazardous",
+"II" = "Moderately hazardous", "III" = "Slightly hazardous",
+"U" = "Unlikely to present acute hazard in normal use",
+"FM" = "Fumigant", "O" = "Obsolete as pesticide"
 
-
-
+Here is the key for the interpretation of the harm levels in the graph
+above.
